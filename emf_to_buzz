@@ -1,0 +1,214 @@
+/*
+ * Copyright 2020 Neosensory, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * Please note that while this Neosensory SDK has an Apache 2.0 license, 
+ * usage of the Neosensory API to interface with Neosensory products is 
+ * still  subject to the Neosensory developer terms of service located at:
+ * https://neosensory.com/legal/dev-terms-service/
+ * 
+ * connect_and_vibrate.ino - Example for using
+ * NeosensoryBluefruit library. Requires a Neosensory
+ * Buzz and an Adafruit Feather board (or other board
+ * that works with Adafruit's Bluefruit library).
+ * 
+ * If you have trouble connecting, you can try putting 
+ * your Buzz into pairing mode by holding the (+) and (-) 
+ * buttons simultaneously until the blue LEDs flash.
+ *
+ * Created by Mike V. Perrotta, January 23, 2020.
+ *
+*/
+
+#include <neosensory_bluefruit.h>
+#define sample_1 167
+#define sample_2 170
+#define sample_3 173
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//declarations:
+
+NeosensoryBluefruit NeoBluefruit;
+
+int inPin = A3;
+float test_value [4] = {0, 0, 0, 0};
+
+float val_0;
+float val_1;
+float val_2;
+float val_3;
+
+int incriment_1 = 167;
+int incriment_2 = 170;
+int incriment_3 = 173;
+int maximum_1 = 0;
+int maximum_2 = 0;
+int maximum_3 = 0;
+
+int array1[sample_1];
+int array2[sample_2];
+int array3[sample_3];
+
+unsigned long averaging_1;
+unsigned long averaging_2;
+unsigned long averaging_3;
+
+unsigned long timing_1_start;
+unsigned long timing_1_end;
+unsigned long timing_2_start;
+unsigned long timing_2_end;
+unsigned long timing_3_start;
+unsigned long timing_3_end;
+unsigned long time_;
+
+void setup() {
+  Serial.begin(9600);
+  NeoBluefruit.begin();
+  NeoBluefruit.setConnectedCallback(onConnected);
+  NeoBluefruit.setDisconnectedCallback(onDisconnected);
+  NeoBluefruit.setReadNotifyCallback(onReadNotify);
+  NeoBluefruit.startScan();
+  while (!NeoBluefruit.isConnected() || !NeoBluefruit.isAuthorized()) {}
+  NeoBluefruit.deviceInfo();
+  NeoBluefruit.deviceBattery();
+  timing_1_end = 0;
+  timing_2_end = 0;
+  timing_3_end = 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//loop:
+
+void loop() {
+Serial.print("Start Time: ");
+time_ = millis();
+Serial.println(time_);
+
+float test[NeoBluefruit.num_motors()];
+
+  if (NeoBluefruit.isConnected() && NeoBluefruit.isAuthorized()) {
+
+        timing_1_start = millis();
+        while (timing_1_start - timing_1_end < incriment_1) {
+          timing_1_start = millis();
+          delayMicroseconds(1);
+        }       
+        for(int i = 0; i < sample_1; i++){
+          array1[i] = analogRead(inPin);
+          averaging_1 += array1[i];
+        }
+        timing_1_end = millis();
+        timing_2_start = millis();
+        while (timing_2_start - timing_2_end < incriment_2) {
+          timing_2_start = millis();
+          delayMicroseconds(1);
+        } 
+        for(int i = 0; i < sample_2; i++){
+          array2[i] = analogRead(inPin);
+          averaging_2 += array2[i];
+        }
+        timing_2_end = millis();
+        timing_3_start = millis();
+        while (timing_3_start - timing_3_end < incriment_3) {
+          timing_3_start = millis();
+          delayMicroseconds(1);
+        } 
+        for(int j = 0; j < sample_3; j++){
+          array3[j] = analogRead(inPin);
+          averaging_3 += array3[j];
+        }
+        timing_3_end = millis();
+
+   
+        for(int k=0;k <= sample_2; k++) {
+          if(array2[k] > array2[maximum_2]) {
+            maximum_2 = k;
+          }
+        }
+        for(int h=0;h <= sample_1; h++) {
+          if(array1[h] > array1[maximum_1]) {
+            maximum_1 = h;
+          }
+        }
+        for(int z=0;z <= sample_3; z++) {
+          if(array3[z] > array3[maximum_3]) {
+            maximum_3 = z;
+          }
+        }
+
+        val_0 = find_largest(array1[maximum_1], array2[maximum_2], 0);
+        val_0 = constrain(val_0, 30, 100);
+        val_0 = lerp(45, 100, val_0);
+
+        val_1 = val_generator(averaging_1, sample_1, 26, 50);
+
+        val_2 = val_generator(averaging_2, sample_2, 26, 50);
+
+        val_3 = val_generator(averaging_3, sample_3, 26, 50);   
+         
+
+        test[0] = val_0;
+        test[1] = val_1;
+        test[2] = val_2;
+        test[3] = val_3;
+
+        NeoBluefruit.vibrateMotors(test);
+         
+        averaging_1 = 0;
+        averaging_2 = 0;
+        averaging_3 = 0;
+
+  }
+else {
+      NeoBluefruit.vibrateMotors(test_value);
+    } 
+Serial.print("End Time: ");
+time_ = millis();
+Serial.println(time_); 
+  }
+  
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//functions:
+
+
+float find_largest(float _max1, float _max2, float _max3){
+  float largest = 0;
+  if(_max1 > _max2 && _max1 > _max3){
+  largest = _max1;
+  }
+  if(_max2 > _max1 && _max2 > _max3){
+  largest = _max2;
+  }
+  if(_max3 > _max1 && _max3 > _max2){
+  largest = _max3;
+  }
+return largest;
+}
+
+
+float val_generator(float averaging, float sample, float _min, float _max){
+float val = averaging / sample;                   
+val = constrain(val, _min, _max);                                                                 
+val = lerp(_min, _max, val);
+return val;
+}
+
+
+float lerp(float _min, float _max, float thing_mapped){
+float f = (thing_mapped - _min) / (_max - _min);
+if (f<0){
+  f=0;
+}
+return f;
+}
