@@ -1,8 +1,6 @@
-//#define sample 200                                            //If your local AC operates at 50Hz, define sample to be 200 instead of 167.
-
 #define sample 167                                              //This number defines how many times we will perform analogRead().
-                                                                //In this case, we chose 167 because we are trying to sense 60Hz 
-                                                                //AC in power lines and household wires. 1 second / 60 = 16.7 milliseconds
+//#define sample 170                                            //In this case, we chose 167 because we are trying to sense 60Hz 
+//#define sample 173                                            //AC in power lines and household wires. 1 second / 60 = 16.7 milliseconds
                                                                 //analogRead() is performed 10 times per millisecond, so we want to perform 167 reads.
                                                                 //If we are trying to sense 50Hz, we would define sample to be 200.
                                                 
@@ -13,49 +11,51 @@ int inPin = A3;                                                 //We use pin A3 
                         
 float val; 
                                    
-int array1[sample];                                             //We create an array of size "sample" to hold all of our analogRead() values. 
+int array1[sample];                                             //We create an array of size sample to hold all of our analogRead() values. 
            
-int incriment = sample;                                         //We use "incriment" to make sure that random delays in our loop do not
-                                                                //cause phase shift issues while measuring the AC signal. Generally, "incriment"
-                                                                //should be the same value as "sample", but it could be something like (16.7 milliseconds)*(integer).
-                                                                             
-unsigned long averaging;                                        //"averaging" is used to add all of the numbers in "array1".
-unsigned long timing_1_start;                                   //"timing_1_start" is involved in preventing phase shift, just like "incriment".
-unsigned long timing_1_end;                                     //"timing_1_end" is involved in preventing phase shift, just like "incriment".
+int incriment = sample;                                         //We use incriment to make sure that random delays in our loop do not
+                                                                //cause phase shift issues while measuring the AC signal. Generally, incriment
+                                                                //should be the same value as sample, but it could be something like (16.7 milliseconds)*(integer).
+                                                                
+int _minimum_ = 26;                                             //We set the value of _minimum_ based on calibration step 5.
+int _maximum_ = 50;                                             //We set the value of _maximum_ based on calibration step 8.                              
+unsigned long averaging;                                        //Averaging is used to add all of the numbers in array1.
+unsigned long timing_1_start;                                   //Timing_1_start is involved in preventing phase shift, just like incriment.
+unsigned long timing_1_end;                                     //Timing_1_end is involved in preventing phase shift, just like incriment.
 
 void setup() { 
   Serial.begin(9600);
-  timing_1_end = 0;                                             //We set "timing_1_end" to begin at 0 so that our loop below doesn't have a problem.
+  timing_1_end = 0;                                             //We set timing_1_end to start at 0 so that our loop below doesn't have a problem.
 }
 
 void loop() {
   
-timing_1_start = millis();                                      //We use "timing_1_start" to check approximatly what time we begin performing analogRead()
+timing_1_start = millis();                                      //We use timing_1_start to check approximatly what time we begin performing analogRead()
   while (timing_1_start - timing_1_end < incriment) {           //We don't let the loop proceed to analogRead() until the difference between 
-    timing_1_start = millis();                                  //between "timing_1_end" and "timing_1_start" is exactly 10 periods of AC oscillation (167 milliseconds).
+    timing_1_start = millis();                                  //between timing_1_end and timing_1_start is exactly 10 periods of AC oscillation
     delayMicroseconds(1);                                 
   }        
   
 for(int i = 0; i < sample; i++){                                //We read the voltage on pin A3 167 times.
    array1[i] = analogRead(inPin);                               //analogRead() assigns an int value between 0 and 1023 for voltage values between
    averaging += array1[i];                                      //0V and 3.3V. This corresponds to an integer for every 0.0032V.
-}                                                               //We add up all of the analogRead() values in "averaging".
-   timing_1_end = millis();                                     //"timing_1_end" is used to check approximately what time we stop performing analogRead() .                 
+}                                                               //We add up all of the analogRead() values in averaging
+   timing_1_end = millis();                                     //timing_1_end is used to check approximately what time we stop performing analogRead()                  
                                                               
                                                                 
                                                                 
-val = averaging / sample;                                       //"val" is the sum of all 167 analogReads divided by 167 to get the average analogRead().                   
-Serial.print("unmapped value: ");                               //"unmapped value" tells us the average value of analogRead() as a value between 0 and 1023.
+val = averaging / sample;                                       //val is the sum of all 167 analogReads divided by 167 to get the average analogRead().                   
+Serial.print("unmapped value: ");                               //unmapped value tells us the average value of analogRead() as a value between 0 and 1023.
 Serial.println(val);                                            //Check the serial monitor to see the average value when you are not near a wire.
-val = constrain(val, 26, 50);                                   //In my case, the average value not near a wire is 26, so I set 26 as my minimum.                                                                   
-val = lerp(26, 50, val);                                        //Move the feather EMF detector near a wire and check the value in the serial monitor.
-                                                                //In my case, the value near a wire is 50, so I set 50 as my maximum. 
-Serial.print("mapped value: ");                                 //"mapped value" gives us our average analogRead() after we map it between the minimum and maximum.
-Serial.println(val);                                            //If calibrated correctly, "mapped value"should be 0 when the detector is not near an electromagnetic   
-averaging = 0;                                                  //field, and 1 when the detector is extremely close to a strong electromagnetic field.                               
+val = constrain(val, _minimum_, _maximum_);                     //In my case, the average value not near a wire is 26, so I set 26 as my _minimum_.                                                                   
+val = lerp(_minimum_, _maximum_, val);                          //Move the feather EMF detector near a wire and check the value in the serial monitor.
+                                                                //In my case, the value near a wire is 50, so I set 50 as my _maximum_. 
+Serial.print("mapped value: ");                                 //mapped value shows us our average analogRead() after we map it between the minimum and maximum.
+Serial.println(val);                                            //mapped value should be 0 when the detector is not near an electromagnetic field, and 1 when   
+averaging = 0;                                                  //the detector is extremely close to a strong electromagnetic field.                               
 }
 
-float lerp(float _min, float _max, float thing_mapped){         //Lerp helps us map our raw analogRead() value to a value between 0 and 1.
+float lerp(int _min, int _max, float thing_mapped){             //Lerp helps us map our raw analogRead() value to a value between 0 and 1.
 float f = (thing_mapped - _min) / (_max - _min);                //We need to map between 0 and 1 because Buzz motor commands range in intensity from 0 to 1.
 if (val<0) {
   val = 0;
