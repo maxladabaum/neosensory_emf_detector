@@ -30,6 +30,7 @@
  * Created by Mike V. Perrotta, January 23, 2020.
  *
 */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <neosensory_bluefruit.h>
 #define sample_1 167
@@ -49,9 +50,16 @@ float val_1;
 float val_2;
 float val_3;
 
-int incriment_1 = 167;
-int incriment_2 = 170;
-int incriment_3 = 173;
+int 167_min = 26;
+int 167_max = 50;
+int 170_min = 26;
+int 170_max = 50;
+int 173_min = 26;
+int 173_max = 50;
+
+int incriment_1 = sample_1;
+int incriment_2 = sample_2;
+int incriment_3 = sample_3;
 int maximum_1 = 0;
 int maximum_2 = 0;
 int maximum_3 = 0;
@@ -70,7 +78,9 @@ unsigned long timing_2_start;
 unsigned long timing_2_end;
 unsigned long timing_3_start;
 unsigned long timing_3_end;
-unsigned long time_;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//setup:
 
 void setup() {
   Serial.begin(9600);
@@ -91,9 +101,6 @@ void setup() {
 //loop:
 
 void loop() {
-Serial.print("Start Time: ");
-time_ = millis();
-Serial.println(time_);
 
 float test[NeoBluefruit.num_motors()];
 
@@ -151,13 +158,10 @@ float test[NeoBluefruit.num_motors()];
         val_0 = constrain(val_0, 30, 100);
         val_0 = lerp(45, 100, val_0);
 
-        val_1 = val_generator(averaging_1, sample_1, 26, 50);
-
-        val_2 = val_generator(averaging_2, sample_2, 26, 50);
-
-        val_3 = val_generator(averaging_3, sample_3, 26, 50);   
+        val_1 = val_generator(averaging_1, sample_1, 167_min, 167_max);
+        val_2 = val_generator(averaging_2, sample_2, 170_min, 170_max);
+        val_3 = val_generator(averaging_3, sample_3, 173_min, 173_max);   
          
-
         test[0] = val_0;
         test[1] = val_1;
         test[2] = val_2;
@@ -168,15 +172,13 @@ float test[NeoBluefruit.num_motors()];
         averaging_1 = 0;
         averaging_2 = 0;
         averaging_3 = 0;
-
   }
+  
 else {
       NeoBluefruit.vibrateMotors(test_value);
     } 
-Serial.print("End Time: ");
-time_ = millis();
-Serial.println(time_); 
-  }
+    
+}
   
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //functions:
@@ -197,7 +199,7 @@ return largest;
 }
 
 
-float val_generator(float averaging, float sample, float _min, float _max){
+float val_generator(float averaging, float sample, int _min, int _max){
 float val = averaging / sample;                   
 val = constrain(val, _min, _max);                                                                 
 val = lerp(_min, _max, val);
@@ -205,7 +207,7 @@ return val;
 }
 
 
-float lerp(float _min, float _max, float thing_mapped){
+float lerp(int _min, int _max, float thing_mapped){
 float f = (thing_mapped - _min) / (_max - _min);
 if (f<0){
   f=0;
