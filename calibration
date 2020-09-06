@@ -1,3 +1,5 @@
+//#define sample 200                                            //If your local AC operates at 50Hz, define sample to be 200 instead of 167.
+
 #define sample 167                                              //This number defines how many times we will perform analogRead().
                                                                 //In this case, we chose 167 because we are trying to sense 60Hz 
                                                                 //AC in power lines and household wires. 1 second / 60 = 16.7 milliseconds
