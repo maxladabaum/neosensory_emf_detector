@@ -1,7 +1,7 @@
 #include <neosensory_bluefruit.h>
-#define sample_1 167
-#define sample_2 170
-#define sample_3 173
+#define sample_1 162
+#define sample_2 164
+#define sample_3 166
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //declarations:
@@ -118,8 +118,8 @@ float test[NeoBluefruit.num_motors()];
         }
 
         val_0 = find_largest(array1[maximum_1], array2[maximum_2], 0);
-        val_0 = constrain(val_0, 30, 100);
-        val_0 = lerp(45, 100, val_0);
+        val_0 = constrain(val_0, 50, 100);
+        val_0 = lerp(50, 100, val_0);
 
         val_1 = val_generator(averaging_1, sample_1, min_low, max_low);
         val_2 = val_generator(averaging_2, sample_2, min_mid, max_mid);
@@ -163,8 +163,8 @@ return largest;
 
 
 float val_generator(float averaging, float sample, float _min, float _max){
-float val = averaging / sample;                   //here the program takes the sum of all numbers in array1, and divides by the number of elements "sample"
-val = constrain(val, _min, _max);               //this constrains the variable value to between two numbers 0 and 100                                                      //the map statement tells the program to map out 0-100 to 0-255, 255 is 
+float val = averaging / sample;                  
+val = constrain(val, _min, _max);               
 val = lerp(_min, _max, val);
 return val;
 }
