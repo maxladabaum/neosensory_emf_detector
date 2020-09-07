@@ -1,8 +1,8 @@
-#define sample 167                                              //This number defines how many times we will perform analogRead().
-//#define sample 170                                            //In this case, we chose 167 because we are trying to sense 60Hz 
-//#define sample 173                                            //AC in power lines and household wires. 1 second / 60 = 16.7 milliseconds
-                                                                //analogRead() is performed 10 times per millisecond, so we want to perform 167 reads.
-                                                                //If we are trying to sense 50Hz, we would define sample to be 200.
+#define sample 164                                              //This number defines how many times we will perform analogRead().
+//#define sample 162                                            //In this case, we chose 164 because we are trying to sense 60Hz 
+//#define sample 166                                            //AC in power lines and household wires. 1 second / 60 = 16.7 milliseconds
+                                                                //analogRead() is performed 9.82 times per millisecond, so we want to perform 164 reads.
+                                                                //If we are trying to sense 50Hz, we would define sample to be 196.
                                                 
 int inPin = A3;                                                 //We use pin A3 to pick up signal from the copper wire "antenna."
                                                                 //If you have problems getting a signal, try switching to a different
@@ -15,10 +15,10 @@ int array1[sample];                                             //We create an a
            
 int incriment = sample;                                         //We use incriment to make sure that random delays in our loop do not
                                                                 //cause phase shift issues while measuring the AC signal. Generally, incriment
-                                                                //should be the same value as sample, but it could be something like (16.7 milliseconds)*(integer).
+                                                                //should be the same value as sample, but it could be something like (AC period)*(integer).
                                                                 
 int _minimum_ = 26;                                             //We set the value of _minimum_ based on calibration step 5.
-int _maximum_ = 50;                                             //We set the value of _maximum_ based on calibration step 8.                              
+int _maximum_ = 40;                                             //We set the value of _maximum_ based on calibration step 8.                              
 unsigned long averaging;                                        //Averaging is used to add all of the numbers in array1.
 unsigned long timing_1_start;                                   //Timing_1_start is involved in preventing phase shift, just like incriment.
 unsigned long timing_1_end;                                     //Timing_1_end is involved in preventing phase shift, just like incriment.
@@ -50,8 +50,8 @@ Serial.println(val);                                            //Check the seri
 val = constrain(val, _minimum_, _maximum_);                     //In my case, the average value not near a wire is 26, so I set 26 as my _minimum_.                                                                   
 val = lerp(_minimum_, _maximum_, val);                          //Move the feather EMF detector near a wire and check the value in the serial monitor.
                                                                 //In my case, the value near a wire is 50, so I set 50 as my _maximum_. 
-Serial.print("mapped value: ");                                 //mapped value shows us our average analogRead() after we map it between the minimum and maximum.
-Serial.println(val);                                            //mapped value should be 0 when the detector is not near an electromagnetic field, and 1 when   
+//Serial.print("mapped value: ");                               //mapped value shows us our average analogRead() after we map it between the minimum and maximum.
+//Serial.println(val);                                          //mapped value should be 0 when the detector is not near an electromagnetic field, and 1 when   
 averaging = 0;                                                  //the detector is extremely close to a strong electromagnetic field.                               
 }
 
