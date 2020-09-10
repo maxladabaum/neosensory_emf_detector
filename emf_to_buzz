@@ -1,4 +1,4 @@
-//Speacial thanks to Aaron ALAI for inspiring the design of this project.
+//Special thanks to Aaron ALAI for inspiring the design of this project.
 //Aaron's Arduino EMF detector can be found here: http://www.aaronalai.com/emf-detector
 //Also, thanks to Mike Perrotta and Ian for bug fixing and troubleshooting help.
 
@@ -6,6 +6,11 @@
 #define sample_1 162                                                          //Defines how many times analogRead() is performed (mapped to motor 1).
 #define sample_2 164                                                          //Defines how many times analogRead() is performed (mapped to motor 2).
 #define sample_3 166                                                          //Defines how many times analogRead() is performed (mapped to motor 3).
+
+//For 50Hz AC areas use these values:
+#define sample_1 194
+#define sample_1 196
+#define sample_1 198
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //declarations:
