@@ -1,9 +1,11 @@
 #define sample 164                                              //This number defines how many times we will perform analogRead().
-//#define sample 162                                            //In this case, we chose 164 because we are trying to sense 60Hz 
+//#define sample 162                                            //In the starting case, we chose 164 because we are trying to sense 60Hz 
 //#define sample 166                                            //AC in power lines and household wires. 1 second / 60 = 16.7 milliseconds
-                                                                //analogRead() is performed 9.82 times per millisecond, so we want to perform 164 reads.
-                                                                //If we are trying to sense 50Hz, we would define sample to be 196.
-                                                
+//For 50Hz countries use:                                       //analogRead() is performed 9.82 times per millisecond. We want to perform 164 reads
+//#define sample 196                                            //since 164*(1/9.82)=16.7. If we are trying to sense 50Hz, we define sample to be 196.
+//#define sample 194 
+//#define sample 198 
+
 int inPin = A3;                                                 //We use pin A3 to pick up signal from the copper wire "antenna."
                                                                 //If you have problems getting a signal, try switching to a different
                                                                 //analog pin. Just remember to change the analog pin both here and
