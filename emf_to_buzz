@@ -1,49 +1,63 @@
+//Speacial thanks to Aaron ALAI for inspiring the design of this project.
+//Aaron's Arduino EMF detector can be found here: http://www.aaronalai.com/emf-detector
+//Also, thanks to Mike Perrotta and Ian for bug fixing and troubleshooting help.
+
 #include <neosensory_bluefruit.h>
-#define sample_1 162
-#define sample_2 164
-#define sample_3 166
+#define sample_1 162                                                          //Defines how many times analogRead() is performed (mapped to motor 1).
+#define sample_2 164                                                          //Defines how many times analogRead() is performed (mapped to motor 2).
+#define sample_3 166                                                          //Defines how many times analogRead() is performed (mapped to motor 3).
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //declarations:
 
 NeosensoryBluefruit NeoBluefruit;
 
-int inPin = A3;
-float test_value [4] = {0, 0, 0, 0};
+int inPin = A3;                                                               //We use pin A3 to pick up signal from the copper wire "antenna."
+                                                                              //If you have problems getting a signal, try switching to a different
+                                                                              //analog pin. Just remember to change the analog pin both here and
+                                                                              //on your feather.
+
+float test_value [4] = {0, 0, 0, 0};                                          //An array used to set all motors to 0.
 
 float val_0;
 float val_1;
 float val_2;
 float val_3;
 
-int min_low = 26;
-int max_low = 50;
-int min_mid = 26;
-int max_mid = 50;
-int min_high = 26;
-int max_high = 50;
+//CHANGE THESE VALUES TO YOUR OWN CALIBRATION VALUES:                         //CHANGE THESE VALUES TO YOUR OWN CALIBRATION VALUES:
+int min_low = 27;                                                             //Corresponds to the "_minimum_" value found during calibration (sample 162).
+int max_low = 40;                                                             //Corresponds to the "_maximum_" value found during calibration (sample 162).
+int min_mid = 27;                                                             //Corresponds to the "_minimum_" value found during calibration (sample 164).
+int max_mid = 40;                                                             //Corresponds to the "_maximum_" value found during calibration (sample 164).
+int min_high = 27;                                                            //Corresponds to the "_minimum_" value found during calibration (sample 166).
+int max_high = 40;                                                            //Corresponds to the "_maximum_" value found during calibration (sample 166).
 
-int incriment_1 = sample_1;
-int incriment_2 = sample_2;
-int incriment_3 = sample_3;
+int incriment_1 = sample_1;                                                   //Stops the loop from proceeding until AC phase is alligned.
+int incriment_2 = sample_2;                                                   //Stops the loop from proceeding until AC phase is alligned.
+int incriment_3 = sample_3;                                                   //Stops the loop from proceeding until AC phase is alligned.
 int maximum_1 = 0;
 int maximum_2 = 0;
 int maximum_3 = 0;
+int lowerbound = 0;
+int upperbound = 0;
+int array1[sample_1];                                                         //An array to hold analogRead() values (for motor 1).
+int array2[sample_2];                                                         //An array to hold analogRead() values (for motor 2).
+int array3[sample_3];                                                         //An array to hold analogRead() values (for motor 3).
 
-int array1[sample_1];
-int array2[sample_2];
-int array3[sample_3];
+unsigned long averaging_1;                                                    //A place to sum analogRead() values (for motor 1).
+unsigned long averaging_2;                                                    //A place to sum analogRead() values (for motor 2).
+unsigned long averaging_3;                                                    //A place to sum analogRead() values (for motor 3).
 
-unsigned long averaging_1;
-unsigned long averaging_2;
-unsigned long averaging_3;
+unsigned long timing_1_start;                                                 //Tracks intraloop time to allign AC phase (for motor 1).
+unsigned long timing_1_end;                                                   //Tracks intraloop time to allign AC phase (for motor 1).
+unsigned long timing_2_start;                                                 //Tracks intraloop time to allign AC phase (for motor 2).
+unsigned long timing_2_end;                                                   //Tracks intraloop time to allign AC phase (for motor 2).
+unsigned long timing_3_start;                                                 //Tracks intraloop time to allign AC phase (for motor 3).
+unsigned long timing_3_end;                                                   //Tracks intraloop time to allign AC phase (for motor 3).
 
-unsigned long timing_1_start;
-unsigned long timing_1_end;
-unsigned long timing_2_start;
-unsigned long timing_2_end;
-unsigned long timing_3_start;
-unsigned long timing_3_end;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//setup:
 
 void setup() {
   Serial.begin(9600);
@@ -58,6 +72,8 @@ void setup() {
   timing_1_end = 0;
   timing_2_end = 0;
   timing_3_end = 0;
+  upperbound = find_largest(max_low, max_mid, max_high)*3;                        //Upper bound for mapping surge data.
+  lowerbound = find_largest(max_low, max_mid, max_high);                          //Lower bound for mapping surge data.
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,80 +81,84 @@ void setup() {
 
 void loop() {
 
-float test[NeoBluefruit.num_motors()];
+float test[NeoBluefruit.num_motors()];                                            //test[] is the array we will use to send frames to Buzz.
 
-  if (NeoBluefruit.isConnected() && NeoBluefruit.isAuthorized()) {
+  if (NeoBluefruit.isConnected() && NeoBluefruit.isAuthorized()) {                //Makes sure Buzz is connected and authorized.
 
-        timing_1_start = millis();
-        while (timing_1_start - timing_1_end < incriment_1) {
-          timing_1_start = millis();
+        timing_1_start = millis();                                                
+        while (timing_1_start - timing_1_end < incriment_1) {                     //Delays the loop until the difference (in millisectonds) between timing_1_start and
+          timing_1_start = millis();                                              //timing_1_end is greater than the value of incriment_1.
           delayMicroseconds(1);
         }       
-        for(int i = 0; i < sample_1; i++){
-          array1[i] = analogRead(inPin);
+        for(int i = 0; i < sample_1; i++){                                        //Collects sample_1 amount of analogRead() values from pin A3. These values are directly influenced
+          array1[i] = analogRead(inPin);                                          //by the electromagnetic field surrounding the device.
           averaging_1 += array1[i];
         }
         timing_1_end = millis();
-        timing_2_start = millis();
-        while (timing_2_start - timing_2_end < incriment_2) {
-          timing_2_start = millis();
+        timing_2_start = millis();                                                  
+        while (timing_2_start - timing_2_end < incriment_2) {                     //Delays the loop until the difference (in millisectonds) between timing_2_start and
+          timing_2_start = millis();                                              //timing_2_end is greater than the value of incriment_2.
           delayMicroseconds(1);
         } 
-        for(int i = 0; i < sample_2; i++){
+        for(int i = 0; i < sample_2; i++){                                        //Collects sample_2 amount of analogRead() values from pin A3.
           array2[i] = analogRead(inPin);
-          averaging_2 += array2[i];
+          averaging_2 += array2[i]; 
         }
         timing_2_end = millis();
         timing_3_start = millis();
-        while (timing_3_start - timing_3_end < incriment_3) {
-          timing_3_start = millis();
+        while (timing_3_start - timing_3_end < incriment_3) {                     //Delays the loop until the difference (in millisectonds) between timing_3_start and
+          timing_3_start = millis();                                              //timing_3_end is greater than the value of incriment_3.
           delayMicroseconds(1);
         } 
-        for(int j = 0; j < sample_3; j++){
+        for(int j = 0; j < sample_3; j++){                                        //Collects sample_3 amount of analogRead() values from pin A3.
           array3[j] = analogRead(inPin);
           averaging_3 += array3[j];
         }
         timing_3_end = millis();
-
+ 
+            for(int h=0;h < sample_1; h++) {                                      //Finds the largest value inside of array1. This value is the largest
+              if(array1[h] > maximum_1) {                                         //analogRead() value collected over a 16.5 millisecond period.
+                maximum_1 = array1[h];
+              }
+           }
    
-        for(int k=0;k <= sample_2; k++) {
-          if(array2[k] > array2[maximum_2]) {
-            maximum_2 = k;
+            for(int i=0;i < sample_2; i++) {                                      //Finds the largest value inside of array2. This value is the largest
+              if(array2[i] > maximum_2) {                                         //analogRead() value collected over a 16.7 millisecond period.
+                maximum_2 = array2[i];
+             }
           }
-        }
-        for(int h=0;h <= sample_1; h++) {
-          if(array1[h] > array1[maximum_1]) {
-            maximum_1 = h;
+   
+            for(int z=0;z < sample_3; z++) {                                      //Finds the largest value inside of array3. This value is the largest
+              if(array3[z] > maximum_3) {                                         //analogRead() value collected over a 16.9 millisecond period.
+                maximum_3 = array3[z];
+             }
           }
-        }
-        for(int z=0;z <= sample_3; z++) {
-          if(array3[z] > array3[maximum_3]) {
-            maximum_3 = z;
-          }
-        }
 
-        val_0 = find_largest(array1[maximum_1], array2[maximum_2], 0);
-        val_0 = constrain(val_0, 50, 100);
-        val_0 = lerp(50, 100, val_0);
+        val_0 = find_largest(maximum_1, maximum_2, maximum_3);                    //Finds the largest value out of the 3 largest values from array1, array1, and array3.
+        val_0 = constrain(val_0, lowerbound, upperbound);                         //Constrains the largest value between the upper and lower bounds defined in "setup".
+        val_0 = lerp(lowerbound, upperbound, val_0);                              //Maps the constrained value between 0 and 1 based on the upper and lower bounds defined in "setup".
 
-        val_1 = val_generator(averaging_1, sample_1, min_low, max_low);
-        val_2 = val_generator(averaging_2, sample_2, min_mid, max_mid);
-        val_3 = val_generator(averaging_3, sample_3, min_high, max_high);   
+        val_1 = val_generator(averaging_1, sample_1, min_low, max_low);           //Maps 16.5 milliseconds of analogRead() data into a value between 0 and 1 based on calibration bounds.
+        val_2 = val_generator(averaging_2, sample_2, min_mid, max_mid);           //Maps 16.7 milliseconds of analogRead() data into a value between 0 and 1 based on calibration bounds.
+        val_3 = val_generator(averaging_3, sample_3, min_high, max_high);         //Maps 16.9 milliseconds of analogRead() data into a value between 0 and 1 based on calibration bounds.
          
-        test[0] = val_0;
-        test[1] = val_1;
-        test[2] = val_2;
-        test[3] = val_3;
+        test[0] = val_0;                                                          //Sets test[0] to val_0. This will make motor 0 vibrate with intensity val_0.
+        test[1] = val_1;                                                          //Sets test[1] to val_1. This will make motor 1 vibrate with intensity val_1.
+        test[2] = val_2;                                                          //Sets test[2] to val_2. This will make motor 2 vibrate with intensity val_2.
+        test[3] = val_3;                                                          //Sets test[3] to val_3. This will make motor 3 vibrate with intensity val_3.
 
-        NeoBluefruit.vibrateMotors(test);
+        NeoBluefruit.vibrateMotors(test);                                         //Tells Buzz to vibrate its 4 motors at the defined intensities.
          
-        averaging_1 = 0;
-        averaging_2 = 0;
-        averaging_3 = 0;
+        averaging_1 = 0;                                                          //Resets the motor 1 sum to 0.
+        averaging_2 = 0;                                                          //Resets the motor 2 sum to 0.
+        averaging_3 = 0;                                                          //Resets the motor 3 sum to 0.
+        maximum_1 = 0;                                                            //Resets the motor 1 maximum to 0.
+        maximum_2 = 0;                                                            //Resets the motor 2 maximum to 0.
+        maximum_3 = 0;                                                            //Resets the motor 3 maximum to 0.
 
   }
 else {
-      NeoBluefruit.vibrateMotors(test_value);
+      NeoBluefruit.vibrateMotors(test_value);                                     //If Buzz is not connected or authorized, send an array full of 0s.
     } 
 
   }
@@ -147,8 +167,8 @@ else {
 //functions:
 
 
-float find_largest(float _max1, float _max2, float _max3){
-  float largest = 0;
+int find_largest(int _max1, int _max2, int _max3){                                //Finds the largest int from 3 int inputs
+  int largest = 0;
   if(_max1 > _max2 && _max1 > _max3){
   largest = _max1;
   }
@@ -158,19 +178,22 @@ float find_largest(float _max1, float _max2, float _max3){
   if(_max3 > _max1 && _max3 > _max2){
   largest = _max3;
   }
+  else {
+    largest = _max1;
+  }
 return largest;
 }
 
 
-float val_generator(float averaging, float sample, float _min, float _max){
-float val = averaging / sample;                  
+float val_generator(float averaging, float sample, float _min, float _max){       //Generates a 0-1 value based on the sum of analogRead() values, the number of
+float val = averaging / sample;                                                   //analog read values, the calibration minimum bound, and the calibration maximum bound                  
 val = constrain(val, _min, _max);               
 val = lerp(_min, _max, val);
 return val;
 }
 
 
-float lerp(float _min, float _max, float thing_mapped){
+float lerp(float _min, float _max, float thing_mapped){                           //Generates a 0-1 value based on a minimum and maximum bound
 float f = (thing_mapped - _min) / (_max - _min);
 if (f<0){
   f=0;
