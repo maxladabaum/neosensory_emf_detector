@@ -8,9 +8,9 @@
 #define sample_3 166                                                          //Defines how many times analogRead() is performed (mapped to motor 3).
 
 //For 50Hz AC areas use these values:
-#define sample_1 194
-#define sample_1 196
-#define sample_1 198
+//#define sample_1 194
+//#define sample_1 196
+//#define sample_1 198
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //declarations:
