@@ -1,2 +1,2 @@
-# neosensory_emf_detector
-Code that lets users sense electromagnetic fields with Neosensory Buzz
+# Neosensory emf detector
+Code and instructions that let users sense electromagnetic fields with Neosensory Buzz
